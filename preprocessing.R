@@ -98,7 +98,7 @@ isscaap_classif <- read_csv("https://raw.githubusercontent.com/openfigis/RefData
 
 prod_final <- prod_raw %>%
   left_join(isscaap_classif) %>%
-  group_by(country, yearbook_group_en, production_source_name, isscaap_division_en, isscaap_group_en, inland_marine_group_en, fishing_area_code, fishing_area_name, unit, year, lat, lon) %>%
+  group_by(country, continent_group_en, yearbook_group_en, production_source_name, isscaap_division_en, isscaap_group_en, inland_marine_group_en, fishing_area_code, fishing_area_name, unit, year, lat, lon) %>%
   summarise(value = sum(value)) %>%
   ungroup() %>%
   rename(species_group = yearbook_group_en)

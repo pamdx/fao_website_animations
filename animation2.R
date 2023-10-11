@@ -13,11 +13,13 @@ source("functions.R")
 
 # Parameters
 
-species <- c("Fish, crustaceans and molluscs, etc.", "Aquatic animals")
-source <- "Aquaculture production"
-area <- c("Marine areas", "Inland waters")
-format <- "square"
+species <- c("Fish, crustaceans and molluscs, etc.") # choices : "Fish, crustaceans and molluscs, etc.", "Aquatic plants"
+source <- "Capture production"
+area <- c("Inland waters") # choices: "Inland waters" "Marine areas"
+format <- "landscape"
 framerate <- 30
+color_inland <- ifelse(source == "Capture production", "#0091a5", "#FFCC31")
+color_marine <- ifelse(source == "Capture production", "#7babc0", "#f6800d")
 
 # Import data
 
@@ -46,7 +48,8 @@ data_fishing_area_decadal <- readRDS("inputs/data.RDS") %>%
   summarise(value = sum(value)) %>%
   ungroup() %>%
   mutate(decade = as.integer(year - year %% 10)) %>%
-  group_by(production_source_name, fishing_area_code, fishing_area_name, unit, decade) %>%
+  mutate(label = paste0(decade, "s")) %>%
+  group_by(production_source_name, fishing_area_code, fishing_area_name, unit, decade, label) %>%
   summarise(value = mean(value)) %>%
   ungroup() %>%
   complete(decade, nesting(production_source_name, fishing_area_code, fishing_area_name, unit), fill = list(value = 0)) %>% # This is needed to avoid weird easing effects when the number of groups per year isn't constant throughout the years
@@ -69,47 +72,69 @@ fishing_areas_shp <- read_sf('./inputs/FAO_fishing_areas_shp/FAO_fishing_areas_s
 
 # Plot map  
 
-p <- ggplot() +
-  geom_sf(data = fishing_areas_shp, fill = "white", color = "darkgray", alpha = 0.7, size = 0.15) +
-  geom_sf(data = data_fishing_area_yearly %>% filter(value != 0), aes(geometry = geometry, group = fishing_area_code, color = fishing_area_code < 10, size = value), alpha = 0.85) +
-  geom_text(data = data_fishing_area_yearly, aes(x = Lat, y = Lon, label = annotation_map), color = "gray", alpha = 0.85) +
-  scale_size_area(max_size = ifelse(format == "landscape", 60, 40),
-                  breaks = scales::breaks_log(n = 5, base = 10)(1:max(data_fishing_area_yearly$value)), labels = addUnits, name = "Production") +
-  scale_colour_manual(name = 'Production', values = setNames(c('#b1c91e','#0090a4'), c(T, F))) +
-  theme_void() + 
-  guides(color = "none", size = guide_legend(override.aes = list(color = ifelse(length(area) > 1, "gray", switch(area, "Marine areas" = "#0090a4", "Inland waters" = "#b1c91e"))))) +
-  theme(plot.background = element_rect(fill = "white"), legend.position = "bottom") +
-  labs(title = paste0(source, " by fishing area, ", ifelse(length(area) > 1, "", paste0(tolower(area), ", ")), paste(range(data_fishing_area_yearly$year), collapse = "-")), caption = ifelse(length(species) > 1, 'The data includes aquatic animals and plants. Units: tonnes - live weight (animals), wet weight (plants).', 'The data only includes aquatic animals. Units: tonnes - live weight.')) +
-  # gganimate part
-  labs(subtitle = 'Year: {frame_time}') +
-  transition_time(year, range = 1950:2021) +
-  ease_aes('linear') +
-  enter_fade() +
-  exit_shrink()
-
-p <- ggplot() +
-  geom_sf(data = fishing_areas_shp, fill = "white", color = "darkgray", alpha = 0.7, size = 0.15) +
-  geom_sf(data = data_fishing_area_decadal %>% filter(value != 0), aes(geometry = geometry, group = fishing_area_code, color = fishing_area_code < 10, size = value), alpha = 0.85) +
-  geom_text(data = data_fishing_area_decadal, aes(x = Lat, y = Lon, label = annotation_map), color = "white", alpha = 0.85) +
-  scale_size_area(max_size = ifelse(format == "landscape", 60, 40),
-                  breaks = scales::breaks_log(n = 6, base = 10)(1000:max(data_fishing_area_decadal$value)), 
-                  labels = addUnits, 
-                  name = "Production") +
-  scale_colour_manual(name = 'Water type', values = setNames(c('#b1c91e','#0090a4'), c(T, F))) +
-  theme_void() + 
-  guides(color = "none", size = guide_legend(override.aes = list(color = ifelse(length(area) > 1, "gray", switch(area, "Marine areas" = "#0090a4", "Inland waters" = "#b1c91e"))))) +
-  theme(plot.background = element_rect(fill = "white"), legend.position = "bottom") +
-  labs(title = paste0(source, " by fishing area, ", ifelse(length(area) > 1, "", paste0(tolower(area), ", ")), "decade average, ", paste(range(data_fishing_area_yearly$year), collapse = "-")), 
-       caption = ifelse(length(species) > 1, "The annotations refer to the fishing area's share of global production. Blue: marine areas, green: inland areas. \n The data includes aquatic animals and plants. Units: tonnes - live weight (animals), wet weight (plants).", "The annotations refer to the fishing area's share of global production. The data only includes aquatic animals. Units: tonnes - live weight.")) +
-  # gganimate part
-  labs(subtitle = paste0('Decade: {closest_state}', 's')) +
-  transition_states(decade, transition_length = 1, state_length = 0, wrap = FALSE) +
-  ease_aes('linear') +
-  enter_fade() +
-  exit_shrink()
+if (format == "landscape") {
+ 
+  p <- ggplot() +
+    geom_sf(data = fishing_areas_shp, fill = "white", color = "darkgray", alpha = 0.7, size = 0.15) +
+    geom_sf(data = data_fishing_area_yearly %>% filter(value != 0), aes(geometry = geometry, group = fishing_area_code, color = fishing_area_code < 10, size = value), alpha = 0.85) +
+    geom_text(data = data_fishing_area_yearly, aes(x = Lat, y = Lon, label = annotation_map), color = "white", alpha = 0.85, fontface = "bold") +
+    scale_size_area(max_size = ifelse(format == "landscape", 60, 40),
+                    breaks = scales::breaks_log(n = 6, base = 10)(1000:max(data_fishing_area_yearly$value)), 
+                    labels = addUnits, 
+                    name = "Production") +
+    scale_colour_manual(name = 'Water type', values = setNames(c(color_inland,color_marine), c(T, F))) +
+    theme_void() + 
+    guides(color = "none", size = guide_legend(override.aes = list(color = ifelse(length(area) > 1, "gray", switch(area, "Marine areas" = color_marine, "Inland waters" = color_inland))))) +
+    theme(legend.position = "bottom") +
+    labs(title = paste0(source, " by FAO major fishing area"),
+         subtitle = paste0(ifelse(length(area) > 1, "", paste0(area, ", ")), paste(range(data_fishing_area_yearly$year), collapse = "-")), 
+         caption = ifelse(length(species) > 1, "The percentages refer to the fishing area's share of global production. \n The data include aquatic animals and plants. Units: tonnes - live weight (animals), wet weight (plants).", "The percentages refer to the fishing area's share of global production. The data only include aquatic animals. Units: tonnes - live weight.")) +
+    geom_text(data = data_fishing_area_yearly, aes(label = as.factor(year)), x = 15000000, y = -8400000, alpha = 0.2,  col = "gray", size = 20) +
+    # gganimate part
+    # labs(subtitle = 'Year: {frame_time}') +
+    transition_time(year) +
+    ease_aes('linear') # +
+  # enter_fade() +
+  # exit_shrink() 
+  
+} else{
+  
+  p <- ggplot() +
+    geom_sf(data = fishing_areas_shp, fill = "white", color = "darkgray", alpha = 0.7, size = 0.15) +
+    geom_sf(data = data_fishing_area_decadal %>% filter(value != 0), aes(geometry = geometry, group = fishing_area_code, color = fishing_area_code < 10, size = value), alpha = 0.85) +
+    geom_text(data = data_fishing_area_decadal, aes(x = Lat, y = Lon, label = annotation_map), color = "white", alpha = 0.85, fontface = "bold") +
+    scale_size_area(max_size = ifelse(format == "landscape", 60, 40),
+                    breaks = scales::breaks_log(n = 6, base = 10)(1000:max(data_fishing_area_decadal$value)), 
+                    labels = addUnits, 
+                    name = "Production") +
+    scale_colour_manual(name = 'Water type', values = setNames(c(color_inland,color_marine), c(T, F))) +
+    theme_void() + 
+    guides(color = "none", size = guide_legend(override.aes = list(color = ifelse(length(area) > 1, "gray", switch(area, "Marine areas" = color_marine, "Inland waters" = color_inland))))) +
+    theme(legend.position = "bottom") +
+    labs(title = paste0(source, " by FAO major fishing area"),
+         subtitle = stringr::str_to_sentence(paste0(ifelse(length(area) > 1, "", paste0(area, ", ")), "decade average, ", paste(range(data_fishing_area_yearly$year), collapse = "-"))), 
+         caption = ifelse(length(species) > 1, "The percentages refer to the fishing area's share of global production. \n The data include aquatic animals and plants. Units: tonnes - live weight (animals), wet weight (plants).", "The percentages refer to the fishing area's share of global production. The data only include aquatic animals. Units: tonnes - live weight.")) +
+    geom_text(data = data_fishing_area_decadal, aes(label = as.factor(label)), x = 15000000, y = -8400000, alpha = 0.2,  col = "gray", size = 20) +
+    # gganimate part
+    # labs(subtitle = paste0('Decade: {closest_state}', 's')) +
+    transition_states(decade, transition_length = 1, state_length = 0, wrap = FALSE) +
+    ease_aes('linear') # +
+  # enter_fade() +
+  # exit_shrink()
+  
+}
 
 # Render animation
 
 future::plan("multisession", workers = 8)
-animate(p, renderer = av_renderer(tolower(paste('outputs/animation2/animation2_map', source, paste(area, collapse = "+"), paste(species, collapse = "+"), format, '.mp4', sep = '_'))), width = ifelse(format == "landscape", 1920, 1080), height = 1080, res = 100, duration = 10, fps = framerate, start_pause = framerate, end_pause = framerate, type = "cairo")
+animate(p, 
+        renderer = av_renderer(tolower(paste('outputs/animation2/animation2_map', source, paste(area, collapse = "+"), paste(species, collapse = "+"), format, '.mp4', sep = '_'))), 
+        width = ifelse(format == "landscape", 1920, 1080), 
+        height = 1080, 
+        res = 100, 
+        duration = ifelse(format == "landscape", 60, 10), 
+        fps = framerate, 
+        start_pause = framerate, 
+        end_pause = framerate, 
+        type = "cairo")
 utils::browseURL('map.mp4')
