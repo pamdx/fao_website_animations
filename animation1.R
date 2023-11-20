@@ -15,8 +15,10 @@ source("functions.R")
 
 species <- c("Fish, crustaceans and molluscs, etc.") # choices : "Fish, crustaceans and molluscs, etc.", "Aquatic plants"
 source <- "Aquaculture production"
+source_title <- switch(source, "Aquaculture production" = "Aquaculture production", "Capture production" = "Capture fisheries production")
 area <- c("Marine areas", "Inland waters") # choices: "Inland waters" "Marine areas"
 format <- "landscape"
+annotations <- FALSE
 framerate <- 30
 color <- ifelse(length(area) > 1, "#ce4a50", switch(area, "Marine areas" = "#7babc0", "Inland waters" = "#0091a5"))
 
@@ -195,24 +197,26 @@ if (format == "landscape") {
   p <- ggplot() +
     geom_sf(data = world, color = "lightgray", alpha = 0.7, size = 0.1) +
     coord_sf(datum = NA) +
-    geom_sf(data = data_country_yearly, aes(geometry = geometry, group = country, size = value, color = color_code), alpha = 0.85) +
-    geom_label(data = data_country_yearly, aes(x = lon, y = lat, label = comment), color = "black", alpha = 0.85) +
+    geom_sf(data = data_country_yearly, aes(geometry = geometry, group = country, size = value, color = ifelse(annotations, color_code, color)), alpha = 0.85) +
+    {if(annotations) 
+      geom_label(data = data_country_yearly, aes(x = lon, y = lat, label = comment), color = "black", alpha = 0.85)
+      } +
     scale_size_area(
       max_size = ifelse(format == "landscape", 30, 20),
       breaks = scales::breaks_log(n = 6, base = 10)(1000:max(data_country_yearly$value)), 
       labels = addUnits, 
       name = "Production"
     ) +
+    # geom_text(data = data_country_yearly, aes(label = as.factor(year)), x = 15000000, y = -7700000, alpha = 0.2,  col = "gray", size = 20) +
     scale_colour_identity() +
     theme_void() +
     theme(legend.position = "bottom") +
-    labs(title = paste0(source, " by country"),
-         subtitle = paste0(ifelse(length(area) > 1, "", paste0(area, ", ")), paste(range(data_country_yearly$year), collapse = "-")), 
+    labs(title = paste0(source_title, " by country"),
+         subtitle = paste0(ifelse(length(area) > 1, "", paste0(area, ", ")), paste(range(data_country_yearly$year), collapse = "-"), ', year: {closest_state}'), 
          caption = 'Units: tonnes - live weight. The data only include aquatic animals.') +
-    geom_text(data = data_country_yearly, aes(label = as.factor(year)), x = 15000000, y = -7700000, alpha = 0.2,  col = "gray", size = 20) +
     # gganimate part
     # labs(subtitle = 'Year: {closest_state}') +
-    transition_states(year, transition_length = transition_times$transition, state_length = transition_times$state, wrap = FALSE) +
+    transition_states(year, transition_length = ifelse(annotations, transition_times$transition, 1), state_length = ifelse(annotations, transition_times$state, 0), wrap = FALSE) +
     ease_aes('linear') +
     enter_fade() # +
     # exit_fade()
@@ -229,14 +233,14 @@ if (format == "landscape") {
       labels = addUnits, 
       name = "Production"
     ) +
+    # geom_text(data = data_country_decadal, aes(label = as.factor(label)), x = 15000000, y = -7700000, alpha = 0.2,  col = "gray", size = 20) +
     theme_void() +
     theme(legend.position = "bottom") +
-    labs(title = paste0(source, " by country"),
-         subtitle = stringr::str_to_sentence(paste0(ifelse(length(area) > 1, "", paste0(area, ", ")), "decade average, ", paste(range(data_country_yearly$year), collapse = "-"))), 
+    labs(title = paste0(source_title, " by country"),
+         subtitle = stringr::str_to_sentence(paste0(ifelse(length(area) > 1, "", paste0(area, ", ")), "decade average, ", paste(range(data_country_yearly$year), collapse = "-"), paste0(', decade: {closest_state}', 's'))),
          caption = 'Units: tonnes - live weight. The data only include aquatic animals.') +
-    geom_text(data = data_country_decadal, aes(label = as.factor(label)), x = 15000000, y = -7700000, alpha = 0.2,  col = "gray", size = 20) +
     # gganimate part
-    # labs(subtitle = 'Year: {closest_state}') +
+    # labs(subtitle = 'Decade: {closest_state}') +
     transition_states(decade, transition_length = 1, state_length = 0, wrap = FALSE) +
     ease_aes('linear') +
     enter_fade() # +
@@ -251,7 +255,7 @@ animate(p, renderer = av_renderer(tolower(paste('outputs/animation1/animation1',
         width = ifelse(format == "landscape", 1920, 1080), 
         height = 1080, 
         res = 100, 
-        duration = ifelse(format == "landscape", 60, 10), 
+        duration = ifelse(format == "landscape", 30, 10), 
         fps = framerate, 
         start_pause = framerate, 
         end_pause = framerate, 
