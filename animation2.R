@@ -95,8 +95,8 @@ if (format == "landscape") {
     guides(color = "none", size = guide_legend(override.aes = list(color = ifelse(length(area) > 1, "gray", switch(area, "Marine areas" = color_marine, "Inland waters" = color_inland))))) +
     theme(legend.position = "bottom") +
     labs(title = paste0(source_title, ifelse(source == "Capture production", " by FAO major fishing area", " by FAO major area")),
-         subtitle = paste0(ifelse(length(area) > 1, "", paste0(area, ", ")), paste(range(data_fishing_area_yearly$year), collapse = "-"), ', year: {frame_time}'), 
-         caption = ifelse(length(species) > 1, "The percentages refer to the area's share of global aquaculture production. \n The data include aquatic animals and algae. Units: tonnes - live weight (animals), wet weight (algae).", "The percentages refer to the fishing area's share of global capture fisheries production. The data only include aquatic animals. Units: tonnes - live weight.")) +
+         subtitle = paste0(ifelse(length(area) > 1, "", paste0(area, ", ")), paste(range(data_fishing_area_yearly$year), collapse = "-")), 
+         caption = c('{frame_time}', ifelse(length(species) > 1, "The percentages refer to the area's share of global aquaculture production. \n The data include aquatic animals and algae. Units: tonnes - live weight (animals), wet weight (algae).", "The percentages refer to the fishing area's share of global capture fisheries production. The data only include aquatic animals. Units: tonnes - live weight."))) +
     # gganimate part
     # labs(subtitle = 'Year: {frame_time}') +
     transition_time(year) +
@@ -121,8 +121,8 @@ if (format == "landscape") {
     guides(color = "none", size = guide_legend(override.aes = list(color = ifelse(length(area) > 1, "gray", switch(area, "Marine areas" = color_marine, "Inland waters" = color_inland))))) +
     theme(legend.position = "bottom") +
     labs(title = paste0(source_title, ifelse(source == "Capture production", " by FAO major fishing area", " by FAO major area")),
-         subtitle = stringr::str_to_sentence(paste0(ifelse(length(area) > 1, "", paste0(area, ", ")), "decade average, ", paste(range(data_fishing_area_yearly$year), collapse = "-"), paste0(', decade: {closest_state}', 's'))),
-         caption = ifelse(length(species) > 1, "The percentages refer to the area's share of global aquaculture production. \n The data include aquatic animals and algae. Units: tonnes - live weight (animals), wet weight (algae).", "The percentages refer to the fishing area's share of global capture fisheries production. The data only include aquatic animals. Units: tonnes - live weight.")) +
+         subtitle = stringr::str_to_sentence(paste0(ifelse(length(area) > 1, "", paste0(area, ", ")), "decade average, ", paste(range(data_fishing_area_yearly$year), collapse = "-"))),
+         caption = c('{closest_state}', ifelse(length(species) > 1, "The percentages refer to the area's share of global aquaculture production. \n The data include aquatic animals and algae. Units: tonnes - live weight (animals), wet weight (algae).", "The percentages refer to the fishing area's share of global capture fisheries production. The data only include aquatic animals. Units: tonnes - live weight."))) +
     # gganimate part
     # labs(subtitle = paste0('Decade: {closest_state}', 's')) +
     transition_states(decade, transition_length = 1, state_length = 0, wrap = FALSE) +
