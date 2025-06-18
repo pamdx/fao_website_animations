@@ -1,6 +1,6 @@
 # FAO website animations
 
-Repo of the R code I created to generate animated maps showing the evolving fisheries and aquaculture production of the world's countries since 1950. The animations are generated with the amazing gganimate package.
+Repo of the R code I created to generate animated maps showing the evolving fisheries and aquaculture production of the world's countries since 1950. The animations are generated with the amazing [gganimate](https://github.com/thomasp85/gganimate) package.
 
 Below is an example, showing aquaculture production by country over time.
 
